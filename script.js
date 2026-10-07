@@ -5,7 +5,7 @@ const CLOUDINARY_CLOUD_NAME = "rrgqyrfw";
 const CLOUDINARY_UPLOAD_PRESET = "the_watch";
 
 let uploadedImageUrls = [];
-let currentTab = "watch"; // Boshlang'ich rejim
+let currentTab = "watch";
 
 const imageInput = document.getElementById("imageInput");
 const statusDiv = document.getElementById("status");
@@ -19,15 +19,13 @@ function switchTab(tab) {
 
   const tabs = {
     watch: document.getElementById("tabWatch"),
-    used: document.getElementById("tabUsed"),
     auction: document.getElementById("tabAuction"),
-    installment: document.getElementById("tabInstallment"),
   };
 
   const fields = {
     priceRow: document.getElementById("priceRow"),
+    saleRow: document.getElementById("saleSelectRow"),
     auction: document.getElementById("auctionFields"),
-    installment: document.getElementById("installmentFields"),
   };
 
   Object.values(tabs).forEach((t) => {
@@ -35,18 +33,16 @@ function switchTab(tab) {
   });
 
   if (fields.priceRow) fields.priceRow.classList.add("hidden");
+  if (fields.saleRow) fields.saleRow.classList.add("hidden");
   if (fields.auction) fields.auction.classList.add("hidden");
-  if (fields.installment) fields.installment.classList.add("hidden");
 
   if (tabs[tab]) tabs[tab].classList.add("active");
 
-  if (tab === "watch" || tab === "used") {
+  if (tab === "watch") {
     if (fields.priceRow) fields.priceRow.classList.remove("hidden");
+    if (fields.saleRow) fields.saleRow.classList.remove("hidden");
   } else if (tab === "auction") {
     if (fields.auction) fields.auction.classList.remove("hidden");
-  } else if (tab === "installment") {
-    if (fields.priceRow) fields.priceRow.classList.remove("hidden");
-    if (fields.installment) fields.installment.classList.remove("hidden");
   }
 
   updatePostText();
@@ -54,11 +50,11 @@ function switchTab(tab) {
 
 // ID GENERATOR
 function generateNextId() {
-  const STORAGE_KEY = "thewatchhub_last_id";
+  const STORAGE_KEY = "shoeshub_last_id";
   let lastNumber = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   lastNumber += 1;
   localStorage.setItem(STORAGE_KEY, String(lastNumber));
-  return "T-" + String(lastNumber).padStart(4, "0"); // T-0001
+  return "S-" + String(lastNumber).padStart(4, "0");
 }
 
 if (watchIdInput) {
@@ -70,6 +66,11 @@ document.querySelectorAll("input, select, textarea").forEach((el) => {
   if (el.id === "resultText" || el.id === "imageInput") return;
   el.addEventListener("input", updatePostText);
   el.addEventListener("change", updatePostText);
+});
+
+// CHECKBOX (RAZMERLAR) O'ZGARISHINI KUZATISH
+document.querySelectorAll(".size-checkbox").forEach((cb) => {
+  cb.addEventListener("change", updatePostText);
 });
 
 // RASMLARNI CLOUDINARY'GA YUKLASH
@@ -147,7 +148,6 @@ function addPreview(url, index) {
   previewContainer.appendChild(wrap);
 }
 
-// RASMNI OPTIMIZATSIYA QILISH (WebP / JPEG ga o'tkazish)
 async function loadImage(file) {
   if (typeof createImageBitmap === "function") {
     try {
@@ -204,41 +204,13 @@ async function convertImage(file, index) {
   });
 }
 
-// RASSIROVKA HISOBLAGICHI
-function calculateInstallmentPreview() {
-  const calcBox = document.getElementById("instCalcPreview");
-  if (!calcBox) return;
-
-  const price = Number(document.getElementById("watchPrice")?.value) || 0;
-  const minDown = Number(document.getElementById("instMinDown")?.value) || 0;
-  const annualRate =
-    Number(document.getElementById("instAnnualRate")?.value) || 0;
-  const minMonths =
-    Number(document.getElementById("instMinMonths")?.value) || 0;
-  const maxMonths =
-    Number(document.getElementById("instMaxMonths")?.value) || 0;
-
-  if (!price || !minMonths || !maxMonths) {
-    calcBox.innerHTML = "Narx, foiz va muddatni kiriting.";
-    return;
-  }
-
-  const computeMonthly = (months) => {
-    const remaining = Math.max(price - minDown, 0);
-    const totalInterest = remaining * (annualRate / 100) * (months / 12);
-    const totalPayable = remaining + totalInterest;
-    return totalPayable / months;
-  };
-
-  const monthlyAtMin = computeMonthly(minMonths);
-  const monthlyAtMax = computeMonthly(maxMonths);
-
-  calcBox.innerHTML = `
-    Boshlang'ich to'lov: $${minDown.toLocaleString()}<br/>
-    Qoldiq: $${Math.max(price - minDown, 0).toLocaleString()}<br/><br/>
-    <strong>${minMonths} oy: $${monthlyAtMin.toFixed(2)}/oyiga</strong><br/>
-    <strong>${maxMonths} oy: $${monthlyAtMax.toFixed(2)}/oyiga</strong>
-  `;
+// TANLANGAN RAZMERLARNI YIG'ISH
+function getSelectedSizes() {
+  const selected = [];
+  document.querySelectorAll(".size-checkbox:checked").forEach((cb) => {
+    selected.push(cb.value);
+  });
+  return selected.join(", ");
 }
 
 // POST MATNINI YANGILASH
@@ -246,40 +218,50 @@ function updatePostText() {
   const getValue = (id) => document.getElementById(id)?.value?.trim() || "";
 
   const id = getValue("watchId");
-  const status = document.getElementById("watchStatus")?.value || "";
+  const status = document.getElementById("watchStatus")?.value || "active";
   const brand = getValue("watchBrand");
   const cardTitle = getValue("watchCardTitle");
   const refCode = getValue("watchRefCode");
 
+  const rate = Number(getValue("usdExchangeRate")) || 12800;
+
+  const sizes = getSelectedSizes();
   const material = getValue("watchMaterial");
-  const bracelet = getValue("watchBracelet");
+  const color = getValue("watchBracelet");
   const gender = getValue("watchGender");
-  const glass = getValue("watchGlass");
-  const mechanism = getValue("watchMechanism");
-  const size = getValue("watchSize");
-  const waterRes = getValue("watchWaterResistance");
+  const season = getValue("watchGlass");
 
   const instagram = getValue("watchInstagram");
-  const youtube = getValue("watchYoutube");
   const description = getValue("watchDescription");
   const date = new Date().toLocaleDateString("ru-RU");
 
   const lines = [];
 
-  if (currentTab === "watch" || currentTab === "used") {
-    const price = getValue("watchPrice");
-    lines.push(`Type: ${currentTab === "watch" ? "market" : "used"}`);
-    if (currentTab === "used") lines.push(`🔄 USED WATCH POST 🔄`);
+  if (currentTab === "watch") {
+    const isSaleValue =
+      document.getElementById("shoeSaleType")?.value || "no-sale";
+    const priceUzsum = Number(getValue("watchPriceUzsum")) || 0;
+    const priceUsd = priceUzsum > 0 ? Math.round(priceUzsum / rate) : 0;
+
+    lines.push(`Type: market`);
+    lines.push(`IsSale: ${isSaleValue}`);
     if (id) lines.push(`ID: ${id}`);
     if (status) lines.push(`Status: ${status}`);
     if (brand) lines.push(`Brand: ${brand}`);
     if (cardTitle) lines.push(`Card Title: ${cardTitle}`);
     if (refCode) lines.push(`Ref. Code / Model: ${refCode}`);
-    if (price) lines.push(`Price: $${price}`);
+    if (priceUsd > 0) {
+      lines.push(`Price: $${priceUsd}`);
+      lines.push(`Price UZS: ${priceUzsum.toLocaleString()} UZS`);
+    }
   } else if (currentTab === "auction") {
-    const startPrice = getValue("aucStartPrice");
-    const bidStep = getValue("aucBidStep");
+    const startPriceUzsum = Number(getValue("aucStartPriceUzsum")) || 0;
+    const bidStepUzsum = Number(getValue("aucBidStepUzsum")) || 0;
     const endTime = getValue("aucEndTime");
+
+    const startPriceUsd =
+      startPriceUzsum > 0 ? Math.round(startPriceUzsum / rate) : 0;
+    const bidStepUsd = bidStepUzsum > 0 ? Math.round(bidStepUzsum / rate) : 0;
 
     lines.push(`Type: auction`);
     lines.push(`🔥 AUCTION POST 🔥`);
@@ -288,43 +270,27 @@ function updatePostText() {
     if (brand) lines.push(`Brand: ${brand}`);
     if (cardTitle) lines.push(`Card Title: ${cardTitle}`);
     if (refCode) lines.push(`Ref. Code / Model: ${refCode}`);
-    if (startPrice) lines.push(`Start Price: $${startPrice}`);
-    if (bidStep) lines.push(`Bid Step: +$${bidStep}`);
+    if (startPriceUsd > 0) {
+      lines.push(`Start Price: $${startPriceUsd}`);
+      lines.push(`Start Price UZS: ${startPriceUzsum.toLocaleString()} UZS`);
+    }
+    if (bidStepUsd > 0) {
+      lines.push(`Bid Step: +$${bidStepUsd}`);
+      lines.push(`Bid Step UZS: +${bidStepUzsum.toLocaleString()} UZS`);
+    }
     if (endTime) lines.push(`End Time: ${endTime.replace("T", " ")}`);
-  } else if (currentTab === "installment") {
-    const price = getValue("watchPrice");
-    const minDown = getValue("instMinDown");
-    const annualRate = getValue("instAnnualRate");
-    const minMonths = getValue("instMinMonths");
-    const maxMonths = getValue("instMaxMonths");
-
-    lines.push(`Type: installment`);
-    lines.push(`🏦 INSTALLMENT POST 🏦`);
-    if (id) lines.push(`ID: ${id}`);
-    if (status) lines.push(`Status: ${status}`);
-    if (brand) lines.push(`Brand: ${brand}`);
-    if (cardTitle) lines.push(`Card Title: ${cardTitle}`);
-    if (refCode) lines.push(`Ref. Code / Model: ${refCode}`);
-    if (price) lines.push(`Total Price: $${price}`);
-    if (minDown) lines.push(`Min. Down Payment: $${minDown}`);
-    if (annualRate) lines.push(`Annual Rate: ${annualRate}%`);
-    if (minMonths) lines.push(`Min. Term: ${minMonths} months`);
-    if (maxMonths) lines.push(`Max. Term: ${maxMonths} months`);
   }
 
   lines.push(`--------------------`);
-  if (material) lines.push(`Case Material: ${material}`);
-  if (mechanism) lines.push(`Mechanism: ${mechanism}`);
-  if (glass) lines.push(`Glass: ${glass}`);
-  if (bracelet) lines.push(`Bracelet/Strap: ${bracelet}`);
+  if (sizes) lines.push(`Sizes: ${sizes}`);
+  if (color) lines.push(`Color: ${color}`);
+  if (material) lines.push(`Material: ${material}`);
   if (gender) lines.push(`Gender: ${gender}`);
-  if (size) lines.push(`Case Size: ${size}`);
-  if (waterRes) lines.push(`Water Resistance: ${waterRes}`);
+  if (season) lines.push(`Season: ${season}`);
 
   lines.push(`--------------------`);
   lines.push(`Date: ${date}`);
   if (instagram) lines.push(`Instagram: ${instagram}`);
-  if (youtube) lines.push(`Youtube: ${youtube}`);
   if (description) lines.push(`Description: ${description}`);
 
   uploadedImageUrls.forEach((url, i) => {
@@ -333,10 +299,6 @@ function updatePostText() {
 
   if (resultText) {
     resultText.value = lines.join("\n");
-  }
-
-  if (currentTab === "installment") {
-    calculateInstallmentPreview();
   }
 }
 
@@ -360,22 +322,24 @@ function resetForm() {
   document.querySelectorAll("input, textarea").forEach((el) => {
     if (el.id === "watchId") {
       el.value = generateNextId();
-    } else if (el.id === "aucBidStep") {
-      el.value = "50";
-    } else if (el.id === "instAnnualRate") {
-      el.value = "20";
-    } else if (el.id === "instMinMonths") {
-      el.value = "6";
-    } else if (el.id === "instMaxMonths") {
-      el.value = "36";
+    } else if (el.id === "aucBidStepUzsum") {
+      el.value = "50000";
+    } else if (el.id === "usdExchangeRate") {
+      el.value = "12800";
     } else if (el.id !== "resultText") {
       el.value = "";
     }
   });
 
+  document.querySelectorAll(".size-checkbox").forEach((cb) => {
+    cb.checked = false;
+  });
+
   document.querySelectorAll("select").forEach((el) => {
     if (el.id === "watchStatus") {
       el.value = "active";
+    } else if (el.id === "shoeSaleType") {
+      el.value = "no-sale";
     } else {
       el.selectedIndex = 0;
     }
@@ -390,7 +354,7 @@ function resetForm() {
 
 // const IMGBB_API_KEY = "525f5b21013f284ac9306b4a99c30b7e";
 // let uploadedImageUrls = [];
-// let currentTab = "watch"; // Default mode
+// let currentTab = "watch"; // Shoes rejimi uchun "watch" ID-si saqlandi
 
 // const imageInput = document.getElementById("imageInput");
 // const statusDiv = document.getElementById("status");
@@ -398,53 +362,53 @@ function resetForm() {
 // const resultText = document.getElementById("resultText");
 // const watchIdInput = document.getElementById("watchId");
 
-// // REJIMLARNI ALMASHTIRISH
+// // REJIMLARNI ALMASHTIRISH (Faqat Shoes va Auction)
 // function switchTab(tab) {
 //   currentTab = tab;
 
 //   const tabs = {
 //     watch: document.getElementById("tabWatch"),
-//     used: document.getElementById("tabUsed"),
 //     auction: document.getElementById("tabAuction"),
-//     installment: document.getElementById("tabInstallment"),
 //   };
 
 //   const fields = {
 //     priceRow: document.getElementById("priceRow"),
+//     saleRow: document.getElementById("saleSelectRow"),
 //     auction: document.getElementById("auctionFields"),
-//     installment: document.getElementById("installmentFields"),
 //   };
 
-//   Object.values(tabs).forEach((t) => t.classList.remove("active"));
-//   fields.priceRow.classList.add("hidden");
-//   fields.auction.classList.add("hidden");
-//   fields.installment.classList.add("hidden");
+//   Object.values(tabs).forEach((t) => {
+//     if (t) t.classList.remove("active");
+//   });
 
-//   tabs[tab].classList.add("active");
+//   if (fields.priceRow) fields.priceRow.classList.add("hidden");
+//   if (fields.saleRow) fields.saleRow.classList.add("hidden");
+//   if (fields.auction) fields.auction.classList.add("hidden");
 
-//   if (tab === "watch" || tab === "used") {
-//     fields.priceRow.classList.remove("hidden");
+//   if (tabs[tab]) tabs[tab].classList.add("active");
+
+//   if (tab === "watch") {
+//     if (fields.priceRow) fields.priceRow.classList.remove("hidden");
+//     if (fields.saleRow) fields.saleRow.classList.remove("hidden");
 //   } else if (tab === "auction") {
-//     fields.auction.classList.remove("hidden");
-//   } else if (tab === "installment") {
-//     fields.priceRow.classList.remove("hidden");
-//     fields.installment.classList.remove("hidden");
+//     if (fields.auction) fields.auction.classList.remove("hidden");
 //   }
 
 //   updatePostText();
 // }
 
-// // ID GENERATOR
+// // ID GENERATOR (Oyoq kiyimlar uchun S-0001 formatida)
 // function generateNextId() {
-//   const STORAGE_KEY = "thewatchhub_last_id";
+//   const STORAGE_KEY = "shoeshub_last_id";
 //   let lastNumber = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
 //   lastNumber += 1;
 //   localStorage.setItem(STORAGE_KEY, String(lastNumber));
-//   return "T-" + String(lastNumber).padStart(4, "0"); // T-0001
+//   return "S-" + String(lastNumber).padStart(4, "0");
 // }
 
-// watchIdInput.value = generateNextId();
-// updatePostText();
+// if (watchIdInput) {
+//   watchIdInput.value = generateNextId();
+// }
 
 // // INPUTLAR O'ZGARISHINI KUZATISH
 // document.querySelectorAll("input, select, textarea").forEach((el) => {
@@ -453,65 +417,77 @@ function resetForm() {
 //   el.addEventListener("change", updatePostText);
 // });
 
-// // RASMLARNI YUKLASH
-// imageInput.addEventListener("change", async (e) => {
-//   const files = Array.from(e.target.files);
-//   if (!files.length) return;
-
-//   let successCount = 0;
-//   let failCount = 0;
-//   const failedNames = [];
-
-//   for (let i = 0; i < files.length; i++) {
-//     const file = files[i];
-//     statusDiv.innerText = `⏳ (${i + 1}/${files.length}) "${
-//       file.name
-//     }" processing...`;
-//     statusDiv.style.color = "#fbbf24";
-
-//     try {
-//       const preparedFile = await convertImage(file, i);
-//       const formData = new FormData();
-//       formData.append("image", preparedFile);
-
-//       const res = await fetch(
-//         `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-//         {
-//           method: "POST",
-//           body: formData,
-//         }
-//       );
-
-//       const data = await res.json();
-
-//       if (data && data.success) {
-//         const url = data.data.url;
-//         uploadedImageUrls.push(url);
-//         addPreview(url, uploadedImageUrls.length);
-//         successCount++;
-//       } else {
-//         failCount++;
-//         failedNames.push(`${file.name}`);
-//       }
-//     } catch (err) {
-//       console.error("Upload error:", err);
-//       failCount++;
-//       failedNames.push(`${file.name}`);
-//     }
-//   }
-
-//   if (failCount === 0) {
-//     statusDiv.innerText = "✅ All photos uploaded successfully!";
-//     statusDiv.style.color = "#4ade80";
-//   } else {
-//     statusDiv.innerText = `⚠️ ${successCount} uploaded, ${failCount} failed.`;
-//     statusDiv.style.color = "#f87171";
-//   }
-//   updatePostText();
-//   imageInput.value = "";
+// // CHECKBOX (RAZMERLAR) O'ZGARISHINI KUZATISH
+// document.querySelectorAll(".size-checkbox").forEach((cb) => {
+//   cb.addEventListener("change", updatePostText);
 // });
 
+// // RASMLARNI IMGBB'GA YUKLASH
+// if (imageInput) {
+//   imageInput.addEventListener("change", async (e) => {
+//     const files = Array.from(e.target.files);
+//     if (!files.length) return;
+
+//     let successCount = 0;
+//     let failCount = 0;
+
+//     for (let i = 0; i < files.length; i++) {
+//       const file = files[i];
+//       if (statusDiv) {
+//         statusDiv.innerText = `⏳ (${i + 1}/${files.length}) "${
+//           file.name
+//         }" yuklanmoqda...`;
+//         statusDiv.style.color = "#fbbf24";
+//       }
+
+//       try {
+//         const preparedFile = await convertImage(file, i);
+//         const formData = new FormData();
+//         formData.append("image", preparedFile);
+
+//         const res = await fetch(
+//           `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+//           {
+//             method: "POST",
+//             body: formData,
+//           }
+//         );
+
+//         const data = await res.json();
+
+//         if (data && data.success && data.data && data.data.url) {
+//           const url = data.data.url;
+//           uploadedImageUrls.push(url);
+//           addPreview(url, uploadedImageUrls.length);
+//           successCount++;
+//         } else {
+//           console.error("ImgBB xatosi:", data);
+//           failCount++;
+//         }
+//       } catch (err) {
+//         console.error("Yuklashda xatolik:", err);
+//         failCount++;
+//       }
+//     }
+
+//     if (statusDiv) {
+//       if (failCount === 0) {
+//         statusDiv.innerText =
+//           "✅ Barcha rasmlar ImgBB'ga muvaffaqiyatli yuklandi!";
+//         statusDiv.style.color = "#4ade80";
+//       } else {
+//         statusDiv.innerText = `⚠️ ${successCount} ta yuklandi, ${failCount} ta xatolik bo'ldi.`;
+//         statusDiv.style.color = "#f87171";
+//       }
+//     }
+
+//     updatePostText();
+//     imageInput.value = "";
+//   });
+// }
+
 // function addPreview(url, index) {
+//   if (!previewContainer) return;
 //   const wrap = document.createElement("div");
 //   wrap.className = "preview-item";
 //   const img = document.createElement("img");
@@ -520,7 +496,7 @@ function resetForm() {
 //   previewContainer.appendChild(wrap);
 // }
 
-// // RASMNI QAYTA ISHLASH (WebP)
+// // RASMNI OPTIMIZATSIYA QILISH (WebP / JPEG ga o'tkazish)
 // async function loadImage(file) {
 //   if (typeof createImageBitmap === "function") {
 //     try {
@@ -532,7 +508,7 @@ function resetForm() {
 //     reader.onload = (e) => {
 //       const img = new Image();
 //       img.onload = () => resolve(img);
-//       img.onerror = () => reject(new Error("Load fail"));
+//       img.onerror = () => reject(new Error("Rasm yuklanmadi"));
 //       img.src = e.target.result;
 //     };
 //     reader.readAsDataURL(file);
@@ -551,200 +527,176 @@ function resetForm() {
 //   const ctx = canvas.getContext("2d");
 //   const maxWidth = 1080;
 //   let scale = 1;
+
 //   if (img.width > maxWidth) {
 //     scale = maxWidth / img.width;
 //   }
+
 //   canvas.width = img.width * scale;
 //   canvas.height = img.height * scale;
 //   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
 //   if (typeof img.close === "function") {
 //     img.close();
 //   }
+
 //   let blob = await canvasToBlob(canvas, "image/webp", 0.82);
 //   if (blob && blob.type === "image/webp") {
 //     return new File([blob], `photo_${Date.now()}_${index}.webp`, {
 //       type: "image/webp",
 //     });
 //   }
+
 //   blob = await canvasToBlob(canvas, "image/jpeg", 0.85);
 //   return new File([blob], `photo_${Date.now()}_${index}.jpg`, {
 //     type: "image/jpeg",
 //   });
 // }
 
-// // INSTALLMENT CALCULATOR
-// function calculateInstallmentPreview() {
-//   const calcBox = document.getElementById("instCalcPreview");
-//   if (!calcBox) return;
-
-//   const price = Number(document.getElementById("watchPrice").value) || 0;
-//   const minDown = Number(document.getElementById("instMinDown").value) || 0;
-//   const annualRate =
-//     Number(document.getElementById("instAnnualRate").value) || 0;
-//   const minMonths = Number(document.getElementById("instMinMonths").value) || 0;
-//   const maxMonths = Number(document.getElementById("instMaxMonths").value) || 0;
-
-//   if (!price || !minMonths || !maxMonths) {
-//     calcBox.innerHTML = "Enter Price, Rate and Terms.";
-//     return;
-//   }
-
-//   const computeMonthly = (months) => {
-//     const remaining = Math.max(price - minDown, 0);
-//     const totalInterest = remaining * (annualRate / 100) * (months / 12);
-//     const totalPayable = remaining + totalInterest;
-//     return totalPayable / months;
-//   };
-
-//   const monthlyAtMin = computeMonthly(minMonths);
-//   const monthlyAtMax = computeMonthly(maxMonths);
-
-//   calcBox.innerHTML = `
-//     Down Payment: $${minDown.toLocaleString()}<br/>
-//     Balance: $${Math.max(price - minDown, 0).toLocaleString()}<br/><br/>
-//     <strong>${minMonths} months: $${monthlyAtMin.toFixed(2)}/mo</strong><br/>
-//     <strong>${maxMonths} months: $${monthlyAtMax.toFixed(2)}/mo</strong>
-//   `;
+// // TANLANGAN RAZMERLARNI YIG'ISH
+// function getSelectedSizes() {
+//   const selected = [];
+//   document.querySelectorAll(".size-checkbox:checked").forEach((cb) => {
+//     selected.push(cb.value);
+//   });
+//   return selected.join(", ");
 // }
 
-// // POST MATNINI YANGILASH (English Labels)
+// // POST MATNINI YANGILASH
 // function updatePostText() {
-//   const id = document.getElementById("watchId").value.trim();
-//   const status = document.getElementById("watchStatus").value;
-//   const brand = document.getElementById("watchBrand").value.trim();
-//   const cardTitle = document.getElementById("watchCardTitle").value.trim();
-//   const refCode = document.getElementById("watchRefCode").value.trim();
+//   const getValue = (id) => document.getElementById(id)?.value?.trim() || "";
 
-//   // Tech Specs (now text inputs)
-//   const material = document.getElementById("watchMaterial").value.trim();
-//   const bracelet = document.getElementById("watchBracelet").value.trim();
-//   const gender = document.getElementById("watchGender").value.trim();
-//   const glass = document.getElementById("watchGlass").value.trim();
-//   const mechanism = document.getElementById("watchMechanism").value.trim();
-//   const size = document.getElementById("watchSize").value.trim();
-//   const waterRes = document.getElementById("watchWaterResistance").value.trim();
+//   const id = getValue("watchId");
+//   const status = document.getElementById("watchStatus")?.value || "active";
+//   const brand = getValue("watchBrand");
+//   const cardTitle = getValue("watchCardTitle");
+//   const refCode = getValue("watchRefCode");
 
-//   const instagram = document.getElementById("watchInstagram").value.trim();
-//   const youtube = document.getElementById("watchYoutube").value.trim();
-//   const description = document.getElementById("watchDescription").value.trim();
+//   const rate = Number(getValue("usdExchangeRate")) || 12800;
+
+//   const sizes = getSelectedSizes();
+//   const material = getValue("watchMaterial");
+//   const color = getValue("watchBracelet");
+//   const gender = getValue("watchGender");
+//   const season = getValue("watchGlass");
+
+//   const instagram = getValue("watchInstagram");
+//   const description = getValue("watchDescription");
 //   const date = new Date().toLocaleDateString("ru-RU");
 
 //   const lines = [];
 
-//   // Mode Specific
-//   if (currentTab === "watch" || currentTab === "used") {
-//     const price = document.getElementById("watchPrice").value.trim();
-//     lines.push(`Type: ${currentTab === "watch" ? "market" : "used"}`);
-//     if (currentTab === "used") lines.push(`🔄 USED WATCH POST 🔄`);
+//   if (currentTab === "watch") {
+//     const isSaleValue =
+//       document.getElementById("shoeSaleType")?.value || "no-sale";
+//     const priceUzsum = Number(getValue("watchPriceUzsum")) || 0;
+//     const priceUsd = priceUzsum > 0 ? Math.round(priceUzsum / rate) : 0;
+
+//     lines.push(`Type: market`);
+//     lines.push(`IsSale: ${isSaleValue}`);
 //     if (id) lines.push(`ID: ${id}`);
-//     lines.push(`Status: ${status}`);
+//     if (status) lines.push(`Status: ${status}`);
 //     if (brand) lines.push(`Brand: ${brand}`);
 //     if (cardTitle) lines.push(`Card Title: ${cardTitle}`);
 //     if (refCode) lines.push(`Ref. Code / Model: ${refCode}`);
-//     if (price) lines.push(`Price: $${price}`);
+//     if (priceUsd > 0) {
+//       lines.push(`Price: $${priceUsd}`);
+//       lines.push(`Price UZS: ${priceUzsum.toLocaleString()} UZS`);
+//     }
 //   } else if (currentTab === "auction") {
-//     const startPrice = document.getElementById("aucStartPrice").value.trim();
-//     const bidStep = document.getElementById("aucBidStep").value.trim();
-//     const endTime = document.getElementById("aucEndTime").value;
+//     const startPriceUzsum = Number(getValue("aucStartPriceUzsum")) || 0;
+//     const bidStepUzsum = Number(getValue("aucBidStepUzsum")) || 0;
+//     const endTime = getValue("aucEndTime");
+
+//     const startPriceUsd =
+//       startPriceUzsum > 0 ? Math.round(startPriceUzsum / rate) : 0;
+//     const bidStepUsd = bidStepUzsum > 0 ? Math.round(bidStepUzsum / rate) : 0;
 
 //     lines.push(`Type: auction`);
 //     lines.push(`🔥 AUCTION POST 🔥`);
 //     if (id) lines.push(`ID: ${id}`);
-//     lines.push(`Status: ${status}`);
+//     if (status) lines.push(`Status: ${status}`);
 //     if (brand) lines.push(`Brand: ${brand}`);
 //     if (cardTitle) lines.push(`Card Title: ${cardTitle}`);
 //     if (refCode) lines.push(`Ref. Code / Model: ${refCode}`);
-//     if (startPrice) lines.push(`Start Price: $${startPrice}`);
-//     if (bidStep) lines.push(`Bid Step: +$${bidStep}`);
+//     if (startPriceUsd > 0) {
+//       lines.push(`Start Price: $${startPriceUsd}`);
+//       lines.push(`Start Price UZS: ${startPriceUzsum.toLocaleString()} UZS`);
+//     }
+//     if (bidStepUsd > 0) {
+//       lines.push(`Bid Step: +$${bidStepUsd}`);
+//       lines.push(`Bid Step UZS: +${bidStepUzsum.toLocaleString()} UZS`);
+//     }
 //     if (endTime) lines.push(`End Time: ${endTime.replace("T", " ")}`);
-//   } else if (currentTab === "installment") {
-//     const price = document.getElementById("watchPrice").value.trim();
-//     const minDown = document.getElementById("instMinDown").value.trim();
-//     const annualRate = document.getElementById("instAnnualRate").value.trim();
-//     const minMonths = document.getElementById("instMinMonths").value.trim();
-//     const maxMonths = document.getElementById("instMaxMonths").value.trim();
-
-//     lines.push(`Type: installment`);
-//     lines.push(`🏦 INSTALLMENT POST 🏦`);
-//     if (id) lines.push(`ID: ${id}`);
-//     lines.push(`Status: ${status}`);
-//     if (brand) lines.push(`Brand: ${brand}`);
-//     if (cardTitle) lines.push(`Card Title: ${cardTitle}`);
-//     if (refCode) lines.push(`Ref. Code / Model: ${refCode}`);
-//     if (price) lines.push(`Total Price: $${price}`);
-//     if (minDown) lines.push(`Min. Down Payment: $${minDown}`);
-//     if (annualRate) lines.push(`Annual Rate: ${annualRate}%`);
-//     if (minMonths) lines.push(`Min. Term: ${minMonths} months`);
-//     if (maxMonths) lines.push(`Max. Term: ${maxMonths} months`);
 //   }
 
-//   // Common Tech Specs
 //   lines.push(`--------------------`);
-//   if (material) lines.push(`Case Material: ${material}`);
-//   if (mechanism) lines.push(`Mechanism: ${mechanism}`);
-//   if (glass) lines.push(`Glass: ${glass}`);
-//   if (bracelet) lines.push(`Bracelet/Strap: ${bracelet}`);
+//   if (sizes) lines.push(`Sizes: ${sizes}`);
+//   if (color) lines.push(`Color: ${color}`);
+//   if (material) lines.push(`Material: ${material}`);
 //   if (gender) lines.push(`Gender: ${gender}`);
-//   if (size) lines.push(`Case Size: ${size}`);
-//   if (waterRes) lines.push(`Water Resistance: ${waterRes}`);
+//   if (season) lines.push(`Season: ${season}`);
 
 //   lines.push(`--------------------`);
 //   lines.push(`Date: ${date}`);
 //   if (instagram) lines.push(`Instagram: ${instagram}`);
-//   if (youtube) lines.push(`Youtube: ${youtube}`);
 //   if (description) lines.push(`Description: ${description}`);
 
-//   // Images
 //   uploadedImageUrls.forEach((url, i) => {
 //     lines.push(`Image${i + 1}: ${url}`);
 //   });
 
-//   resultText.value = lines.join("\n");
-
-//   if (currentTab === "installment") {
-//     calculateInstallmentPreview();
+//   if (resultText) {
+//     resultText.value = lines.join("\n");
 //   }
 // }
 
+// updatePostText();
+
 // // NUSXALASH VA TOZALASH
 // function copyPost() {
+//   if (!resultText) return;
 //   resultText.select();
 //   document.execCommand("copy");
 //   const copyBtn = document.getElementById("copyBtn");
-//   copyBtn.innerText = "✅ Copied!";
-//   setTimeout(() => {
-//     copyBtn.innerText = "📋 Copy Post";
-//   }, 2000);
+//   if (copyBtn) {
+//     copyBtn.innerText = "✅ Copied!";
+//     setTimeout(() => {
+//       copyBtn.innerText = "📋 Copy Post";
+//     }, 2000);
+//   }
 // }
 
 // function resetForm() {
 //   document.querySelectorAll("input, textarea").forEach((el) => {
 //     if (el.id === "watchId") {
 //       el.value = generateNextId();
-//     } else if (el.id === "aucBidStep") {
-//       el.value = "50";
-//     } else if (el.id === "instAnnualRate") {
-//       el.value = "20";
-//     } else if (el.id === "instMinMonths") {
-//       el.value = "6";
-//     } else if (el.id === "instMaxMonths") {
-//       el.value = "36";
+//     } else if (el.id === "aucBidStepUzsum") {
+//       el.value = "50000";
+//     } else if (el.id === "usdExchangeRate") {
+//       el.value = "12800";
 //     } else if (el.id !== "resultText") {
 //       el.value = "";
 //     }
 //   });
 
+//   document.querySelectorAll(".size-checkbox").forEach((cb) => {
+//     cb.checked = false;
+//   });
+
 //   document.querySelectorAll("select").forEach((el) => {
 //     if (el.id === "watchStatus") {
 //       el.value = "active";
+//     } else if (el.id === "shoeSaleType") {
+//       el.value = "no-sale";
 //     } else {
 //       el.selectedIndex = 0;
 //     }
 //   });
 
 //   uploadedImageUrls = [];
-//   previewContainer.innerHTML = "";
-//   statusDiv.innerText = "";
-//   imageInput.value = "";
+//   if (previewContainer) previewContainer.innerHTML = "";
+//   if (statusDiv) statusDiv.innerText = "";
+//   if (imageInput) imageInput.value = "";
 //   updatePostText();
 // }

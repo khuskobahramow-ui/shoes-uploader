@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
-    <title>The Watch Hub</title>
+    <title>Shoes Hub</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="card">
       <div class="header-row">
         <div>
-          <h2>The Watch Hub</h2>
+          <h2>Shoes Hub</h2>
           <p class="subtitle">Upload WebP and Generate Post</p>
         </div>
         <button
@@ -24,27 +24,17 @@
         </button>
       </div>
 
-      <!-- TYPE SELECTION (Tab Switcher) -->
+      <!-- TYPE SELECTION (Faqat Shoes va Auction) -->
       <div class="tab-switcher">
         <button
           id="tabWatch"
           class="tab-btn active"
           onclick="switchTab('watch')"
         >
-          ⌚ Watches
-        </button>
-        <button id="tabUsed" class="tab-btn" onclick="switchTab('used')">
-          🔄 Used Watches
+          👟 Shoes
         </button>
         <button id="tabAuction" class="tab-btn" onclick="switchTab('auction')">
           🔨 Auction
-        </button>
-        <button
-          id="tabInstallment"
-          class="tab-btn"
-          onclick="switchTab('installment')"
-        >
-          🏦 Installment
         </button>
       </div>
 
@@ -59,95 +49,79 @@
           </select>
         </div>
 
-        <!-- BREND TANLASH (Kengaytirilgan Swiss & Japan premuim ro'yxati) -->
-        <select id="watchBrand">
-          <option value="" selected>Select Brand</option>
-          <optgroup label="Premium Swiss Brands">
-            <option value="Rolex">Rolex</option>
-            <option value="Tudor">Tudor</option>
-            <option value="Bvlgari">Bvlgari</option>
-            <option value="Patek Philippe">Patek Philippe</option>
-            <option value="Audemars Piguet">Audemars Piguet</option>
-            <option value="Vacheron Constantin">Vacheron Constantin</option>
-            <option value="A. Lange & Söhne">A. Lange & Söhne</option>
-            <option value="Breguet">Breguet</option>
-            <option value="Jaeger-LeCoultre">Jaeger-LeCoultre</option>
-            <option value="Blancpain">Blancpain</option>
-            <option value="Ulysse Nardin">Ulysse Nardin</option>
-            <option value="Girard-Perregaux">Girard-Perregaux</option>
-            <option value="Chopard">Chopard</option>
-            <option value="Piaget">Piaget</option>
-            <option value="Cartier">Cartier</option>
-            <option value="Hublot">Hublot</option>
-            <option value="IWC">IWC</option>
-            <option value="Panerai">Panerai</option>
-            <option value="Breitling">Breitling</option>
-            <option value="Omega">Omega</option>
-            <option value="Zenith">Zenith</option>
-          </optgroup>
-          <optgroup label="Popular Swiss Brands">
-            <option value="Tissot">Tissot</option>
-            <option value="Longines">Longines</option>
-            <option value="TAG Heuer">TAG Heuer</option>
-            <option value="Oris">Oris</option>
-            <option value="Rado">Rado</option>
-            <option value="Certina">Certina</option>
-            <option value="Mido">Mido</option>
-            <option value="Hamilton">Hamilton</option>
-            <option value="Frederique Constant">Frederique Constant</option>
-            <option value="Raymond Weil">Raymond Weil</option>
-            <option value="Maurice Lacroix">Maurice Lacroix</option>
-            <option value="Baume & Mercier">Baume & Mercier</option>
-            <option value="Victorinox">Victorinox</option>
-            <option value="Wenger">Wenger</option>
-            <option value="Swatch">Swatch</option>
-          </optgroup>
-          <optgroup label="Japan Brands">
-            <option value="Grand Seiko">Grand Seiko</option>
-            <option value="Seiko">Seiko</option>
-            <option value="Citizen">Citizen</option>
-            <option value="Orient">Orient</option>
-            <option value="Casio">Casio</option>
-            <option value="Credor">Credor</option>
-          </optgroup>
-          <optgroup label="Other">
-            <option value="Other">Other Brand</option>
-          </optgroup>
-        </select>
-
-        <!-- Karta sarlavhasi -->
-        <input
-          type="text"
-          id="watchCardTitle"
-          placeholder="Card Title (e.g., PRX Carbon)"
-        />
-
-        <!-- Narx va Ref Kod -->
-        <div id="priceRow" class="row">
-          <input type="number" id="watchPrice" placeholder="Price ($)" />
+        <!-- MODEL KODI -->
+        <div class="row" style="margin-top: 8px">
           <input
             type="text"
             id="watchRefCode"
-            placeholder="Ref. Code / Model"
+            placeholder="Model / Artikul kodi (masalan: DV0788-100)"
           />
         </div>
 
-        <!-- Auksion inputlari -->
-        <div id="auctionFields" class="form-group hidden">
+        <!-- BREND (Text Input) -->
+        <div class="row" style="margin-top: 8px">
+          <input
+            type="text"
+            id="watchBrand"
+            placeholder="Brand (e.g., Nike, Adidas, Puma)"
+          />
+        </div>
+
+        <!-- SALE STATUS (Faqat Shoes rejimi uchun) -->
+        <div id="saleSelectRow" class="row" style="margin-top: 8px">
+          <select id="shoeSaleType">
+            <option value="no-sale" selected>
+              Skidkada: no-sale (Skidkasiz)
+            </option>
+            <option value="sale">
+              Skidkada: sale (🏷️ Skidkadagi mahsulot)
+            </option>
+          </select>
+        </div>
+
+        <!-- Karta sarlavhasi / Nomi -->
+        <input
+          type="text"
+          id="watchCardTitle"
+          placeholder="Card Title (e.g., Nike Air Force 1 '07)"
+          style="margin-top: 8px"
+        />
+
+        <!-- Narx va Valyuta kursi (Shoes rejimida ko'rinadi) -->
+        <div id="priceRow" class="row" style="margin-top: 8px">
+          <input
+            type="number"
+            id="watchPriceUzsum"
+            placeholder="Narxi (So'mda)"
+          />
+          <input
+            type="number"
+            id="usdExchangeRate"
+            placeholder="1$ kursi (masalan: 12800)"
+            value="12800"
+          />
+        </div>
+
+        <!-- Auksion inputlari (So'm va Dollar hisoblagich bilan) -->
+        <div
+          id="auctionFields"
+          class="form-group hidden"
+          style="margin-top: 8px"
+        >
           <div class="row">
             <input
               type="number"
-              id="aucStartPrice"
-              placeholder="Start Price ($)"
+              id="aucStartPriceUzsum"
+              placeholder="Start Price (So'mda)"
             />
             <input
               type="number"
-              id="aucBidStep"
-              placeholder="Bid Step ($)"
-              value="50"
+              id="aucBidStepUzsum"
+              placeholder="Bid Step (So'mda)"
+              value="50000"
             />
           </div>
-          <div class="row">
+          <div class="row" style="margin-top: 8px">
             <input
               type="datetime-local"
               id="aucEndTime"
@@ -155,66 +129,90 @@
             />
           </div>
         </div>
+      </div>
 
-        <!-- Installment inputlari -->
-        <div id="installmentFields" class="form-group hidden">
-          <div class="row">
-            <input
-              type="number"
-              id="instMinDown"
-              placeholder="Min. Prepayment ($)"
-            />
-            <input
-              type="number"
-              id="instAnnualRate"
-              placeholder="Annual Rate %"
-              value="20"
-            />
-          </div>
-          <div class="row">
-            <input
-              type="number"
-              id="instMinMonths"
-              placeholder="Min. Term (months)"
-              value="6"
-            />
-            <input
-              type="number"
-              id="instMaxMonths"
-              placeholder="Max. Term (months)"
-              value="36"
-            />
-          </div>
-
-          <!-- KALKULYATOR (faqat admin preview) -->
-          <div class="calc-box">
-            <div class="calc-title">
-              📊 Admin Calculator: Calculates options based on Price, %, and
-              Term.
-            </div>
-            <div id="instCalcPreview" class="calc-result">
-              Enter price and terms.
-            </div>
-          </div>
+      <!-- O'lchamlar (Sizes 35 - 47) -->
+      <div class="section-title">Available Sizes (35 - 47)</div>
+      <div class="form-group">
+        <div
+          class="sizes-grid"
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            gap: 6px;
+          "
+        >
+          <label class="size-item"
+            ><input type="checkbox" value="35" class="size-checkbox" />
+            35</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="36" class="size-checkbox" />
+            36</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="37" class="size-checkbox" />
+            37</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="38" class="size-checkbox" />
+            38</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="39" class="size-checkbox" />
+            39</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="40" class="size-checkbox" />
+            40</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="41" class="size-checkbox" />
+            41</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="42" class="size-checkbox" />
+            42</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="43" class="size-checkbox" />
+            43</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="44" class="size-checkbox" />
+            44</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="45" class="size-checkbox" />
+            45</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="46" class="size-checkbox" />
+            46</label
+          >
+          <label class="size-item"
+            ><input type="checkbox" value="47" class="size-checkbox" />
+            47</label
+          >
         </div>
       </div>
 
-      <!-- Texnik xususiyatlar (Siz xohlagandek TEXT INPUTLARI) -->
-      <div class="section-title">Technical Specifications (English labels)</div>
+      <!-- Texnik xususiyatlar -->
+      <div class="section-title">Shoes Specifications</div>
       <div class="form-group">
         <div class="row">
           <input
             type="text"
             id="watchMaterial"
-            placeholder="Case Material (e.g., Steel, Gold)"
+            placeholder="Material (e.g., Natural Leather, Mesh)"
           />
           <input
             type="text"
             id="watchBracelet"
-            placeholder="Bracelet/Strap (e.g., Leather, Steel)"
+            placeholder="Color (e.g., White / Black)"
           />
         </div>
-        <div class="row">
+        <div class="row" style="margin-top: 8px">
           <input
             type="text"
             id="watchGender"
@@ -223,31 +221,12 @@
           <input
             type="text"
             id="watchGlass"
-            placeholder="Glass (e.g., Sapphire, Mineral)"
-          />
-        </div>
-        <div class="row">
-          <input
-            type="text"
-            id="watchMechanism"
-            placeholder="Mechanism (e.g., Automatic, Quartz)"
-          />
-          <input
-            type="text"
-            id="watchSize"
-            placeholder="Case Size (e.g., 41mm)"
-          />
-        </div>
-        <div class="row">
-          <input
-            type="text"
-            id="watchWaterResistance"
-            placeholder="Water Resistance (e.g., 10 ATM, 100m)"
+            placeholder="Season (e.g., Summer, Winter, All Season)"
           />
         </div>
       </div>
 
-      <!-- Video / ijtimoiy tarmoq -->
+      <!-- Linklar -->
       <div class="section-title">Video Review / Verification</div>
       <div class="form-group">
         <input
@@ -255,20 +234,15 @@
           id="watchInstagram"
           placeholder="Instagram link (optional)"
         />
-        <input
-          type="text"
-          id="watchYoutube"
-          placeholder="Youtube link (optional)"
-        />
       </div>
 
-      <!-- Tavsif -->
-      <div class="section-title">Description</div>
+      <!-- Tavsif / Comment -->
+      <div class="section-title">Description / Comment</div>
       <div class="form-group">
         <textarea
           id="watchDescription"
           class="desc-input"
-          placeholder="Watch description..."
+          placeholder="Shoe description and details..."
         ></textarea>
       </div>
 
